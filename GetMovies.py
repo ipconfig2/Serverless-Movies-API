@@ -53,12 +53,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         movies_html = f"""
             <html>
             <head>
+                <title>Movie Ranker</title>
                 <style>
-                    /* Your CSS styling here */
+                    /* Dark theme with a rainbow color animation for the title */
                     body {{
                         background-color: #1f1f1f;
                         color: #e0e0e0;
-                        font-family: 'Roboto', sans-serif;
+                        font-family: 'Arial', sans-serif;
                         padding: 20px;
                         line-height: 1.6;
                         margin: 0;
@@ -67,30 +68,42 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         align-items: center;
                     }}
                     h1 {{
-                        color: #ffcc00;
                         text-align: center;
                         margin-bottom: 30px;
+                        font-size: 2em;
+                        animation: rainbow 3s infinite;  /* Rainbow color animation */
+                    }}
+                    @keyframes rainbow {{
+                        0% {{ color: #ff0000; }}   /* Red */
+                        16.67% {{ color: #ff9900; }}  /* Orange */
+                        33.33% {{ color: #ffff00; }}  /* Yellow */
+                        50% {{ color: #33cc33; }}   /* Green */
+                        66.67% {{ color: #3399ff; }}  /* Blue */
+                        83.33% {{ color: #9933ff; }}  /* Purple */
+                        100% {{ color: #ff0000; }}  /* Back to Red */
                     }}
                     ul {{
                         list-style-type: none;
                         padding: 0;
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                        gap: 20px;
+                        display: flex;  /* Display movies in a row */
+                        flex-wrap: wrap;  /* Allow wrapping to the next line */
+                        justify-content: space-around;  /* Evenly distribute items along the row */
                     }}
                     li {{
                         background-color: #333333;
                         border-radius: 8px;
                         overflow: hidden;
-                        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 4px 8px rgba(224, 224, 224, 0.1);
                         transition: transform 0.3s ease-in-out;
+                        margin: 10px;  /* Add margin between movies */
+                        width: 300px;  /* Set a fixed width for each movie */
                     }}
                     li:hover {{
                         transform: scale(1.05);
                     }}
                     img {{
                         width: 100%;
-                        height: 200px;
+                        height: auto; /* Allow the image to adjust its height while maintaining aspect ratio */
                         object-fit: cover;
                         border-radius: 8px 8px 0 0;
                     }}
@@ -98,11 +111,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         padding: 20px;
                     }}
                     strong {{
-                        color: #ffcc00;
+                        color: #2196F3;
+                        font-weight: bold;
                     }}
                     .summary-button {{
-                        background-color: #ffcc00;
-                        color: #1f1f1f;
+                        background-color: #2196F3;
+                        color: #ffffff;
                         padding: 10px;
                         border: none;
                         border-radius: 5px;
@@ -119,7 +133,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 </style>
             </head>
             <body>
-                <h1>Movies</h1>
+                <h1>Movie Ranker</h1>
                 <ul>
         """
 

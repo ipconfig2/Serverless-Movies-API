@@ -24,13 +24,88 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query = 'SELECT * FROM c'
         items = container.query_items(query, enable_cross_partition_query=True)
 
-        # Extract movie data and generate HTML response
-        movies_html = "<html><body><h1>Movies</h1><ul>"
+        # Extract movie data and generate HTML response with embedded images and styles
+        movies_html = """
+            <html>
+            <head>
+                <style>
+                    body {
+                        background-color: #1f1f1f;  /* Dark background color */
+                        color: #e0e0e0;  /* Text color */
+                        font-family: 'Roboto', sans-serif; /* Use a custom font (Roboto in this case) */
+                        padding: 20px;
+                        line-height: 1.6; /* Improved line height for better readability */
+                        margin: 0;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    h1 {
+                        color: #ffcc00;  /* Header text color */
+                        text-align: center; /* Center-align the header */
+                        margin-bottom: 30px;
+                    }
+
+                    ul {
+                        list-style-type: none;
+                        padding: 0;
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                        gap: 20px;
+                    }
+
+                    li {
+                        background-color: #333333;  /* Darker background for list items */
+                        border-radius: 8px;
+                        overflow: hidden;
+                        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow */
+                        transition: transform 0.3s ease-in-out;
+                    }
+
+                    li:hover {
+                        transform: scale(1.05); /* Scale up on hover for a subtle effect */
+                    }
+
+                    img {
+                        width: 100%;
+                        height: 200px;
+                        object-fit: cover; /* Maintain aspect ratio while covering the container */
+                        border-radius: 8px 8px 0 0;
+                    }
+
+                    .details {
+                        padding: 20px;
+                    }
+
+                    strong {
+                        color: #ffcc00;  /* Strong text color */
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Movies</h1>
+                <ul>
+        """
 
         for item in items:
-            movies_html += f"<li>Title: {item['title']}, Place: {item['place']}, Release Year: {item['releaseYear']}, Genre: {item['genre']}, Cover Url: {item['coverUrl']}</li>"
+            movies_html += f"""
+                    <li>
+                        <img src='{item['coverUrl']}' alt='{item['title']} Cover'>
+                        <div class='details'>
+                            <strong>Title:</strong> {item['title']}<br>
+                            <strong>Place:</strong> {item['place']}<br>
+                            <strong>Release Year:</strong> {item['releaseYear']}<br>
+                            <strong>Genre:</strong> {item['genre']}<br>
+                        </div>
+                    </li>
+            """
 
-        movies_html += "</ul></body></html>"
+        movies_html += """
+                </ul>
+            </body>
+            </html>
+        """
 
         # Return HTML response
         return func.HttpResponse(

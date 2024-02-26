@@ -46,6 +46,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query = 'SELECT * FROM c'
         items = container.query_items(query, enable_cross_partition_query=True)
 
+        # Create a set to store movie titles and avoid duplicates
+        existing_movies = set()
+
         # Embed the styling within the HTML response for movies
         movies_html = f"""
             <html>
@@ -121,36 +124,49 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         """
 
         for item in items:
-            movies_html += f"""
-                <li>
-                    <img src='{item['coverUrl']}' alt='{item['title']} Cover'>
-                    <div class='details'>
-                        <strong>Title:</strong> {item['title']}<br>
-                        <strong>Place:</strong> {item.get('place', 'N/A')}<br>
-                        <strong>Release Year:</strong> {item.get('releaseYear', 'N/A')}<br>
-                        <strong>Genre:</strong> {item.get('genre', 'N/A')}<br>
-                        <button class='summary-button' onclick="generateSummary('{item['title']}')">Generate Summary</button>
-                        <div class='summary' id='summary-{item['title'].replace(' ', '-')}'> </div>
-                    </div>
-                </li>
-            """
+            title = item['title']
+            # Check if the title is already processed to avoid duplicates
+            if title not in existing_movies:
+                movies_html += f"""
+                    <li>
+                        <img src='{item['coverUrl']}' alt='{title} Cover'>
+                        <div class='details'>
+                            <strong>Title:</strong> {title}<br>
+                            <strong>Place:</strong> {item.get('place', 'N/A')}<br>
+                            <strong>Release Year:</strong> {item.get('releaseYear', 'N/A')}<br>
+                            <strong>Genre:</strong> {item.get('genre', 'N/A')}<br>
+                            <button class='summary-button' onclick="generateSummary('{title}')">Generate Summary</button>
+                            <div class='summary' id='summary-{title.replace(' ', '-')}'> </div>
+                        </div>
+                    </li>
+                """
+                existing_movies.add(title)
 
         movies_html += """
                 </ul>
                 <script>
+                    const generatedSummaries = {};
+
                     function generateSummary(title) {
                         const summaryElement = document.getElementById('summary-' + title.replace(/ /g, '-'));
-                        summaryElement.innerHTML = 'Generating summary...';
 
-                        fetch('/api/GenerateSummary?title=' + encodeURIComponent(title))
-                            .then(response => response.text())
-                            .then(summary => {
-                                summaryElement.innerHTML = '<strong>Summary:</strong> ' + summary;
-                            })
-                            .catch(error => {
-                                summaryElement.innerHTML = 'Error generating summary.';
-                                console.error(error);
-                            });
+                        if (generatedSummaries[title]) {
+                            // Use the already generated summary
+                            summaryElement.innerHTML = '<strong>Summary:</strong> ' + generatedSummaries[title];
+                        } else {
+                            // Fetch the summary if not already generated
+                            summaryElement.innerHTML = 'Generating summary...';
+                            fetch('/api/GenerateSummary?title=' + encodeURIComponent(title))
+                                .then(response => response.text())
+                                .then(summary => {
+                                    summaryElement.innerHTML = '<strong>Summary:</strong> ' + summary;
+                                    generatedSummaries[title] = summary;  // Store the generated summary
+                                })
+                                .catch(error => {
+                                    summaryElement.innerHTML = 'Error generating summary.';
+                                    console.error(error);
+                                });
+                        }
                     }
                 </script>
             </body>

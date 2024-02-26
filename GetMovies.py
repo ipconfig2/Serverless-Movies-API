@@ -2,9 +2,9 @@ import json
 import logging
 import os
 from azure.cosmos import CosmosClient
-from azure.functions import func
+import azure.functions as func
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 @app.route(route="GetMovies")
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -15,7 +15,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         database_id = 'Movies'
         container_id = 'Movies'
 
-        # Initialize Cosmos DB client
+        # Initialize Cosmos DB client using the master key
         client = CosmosClient(cosmosdb_endpoint, cosmosdb_key)
         database = client.get_database_client(database_id)
         container = database.get_container_client(container_id)
@@ -24,22 +24,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         query = 'SELECT * FROM c'
         items = container.query_items(query, enable_cross_partition_query=True)
 
-        # Extract movie data and generate response
-        movies = [
-            {
-                "title": item['title'],
-                "place": item['place'],
-                "releaseYear": item['releaseYear'],
-                "genre": item['genre'],
-                "coverUrl": item['coverUrl'],
-            }
-            for item in items
-        ]
+        # Extract movie data and generate HTML response
+        movies_html = "<html><body><h1>Movies</h1><ul>"
 
-        # Return JSON response
+        for item in items:
+            movies_html += f"<li>Title: {item['title']}, Place: {item['place']}, Release Year: {item['releaseYear']}, Genre: {item['genre']}, Cover Url: {item['coverUrl']}</li>"
+
+        movies_html += "</ul></body></html>"
+
+        # Return HTML response
         return func.HttpResponse(
-            body=json.dumps(movies),
-            mimetype="application/json",
+            body=movies_html,
+            mimetype="text/html",
             status_code=200
         )
     except Exception as e:

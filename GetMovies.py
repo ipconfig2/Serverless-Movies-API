@@ -1,9 +1,11 @@
+# Import necessary libraries
 import logging
 import os
 import requests
 from azure.cosmos import CosmosClient
 import azure.functions as func
 
+# Initialize Azure Function App
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 # Your Hugging Face API key goes here
@@ -24,11 +26,30 @@ container = database.get_container_client(container_id)
 huggingface_api_url = "https://api-inference.huggingface.co/models/google/gemma-7b"
 
 def get_movie_details(title):
+    """
+    Retrieve details of a movie from Cosmos DB based on its title.
+
+    Parameters:
+    - title (str): The title of the movie.
+
+    Returns:
+    - dict or None: The details of the movie if found, else None.
+    """
     query = f'SELECT * FROM c WHERE c.title = "{title}"'
     items = container.query_items(query, enable_cross_partition_query=True)
     return next(iter(items), None)
 
 def generate_summary_using_api(text, max_tokens=5):
+    """
+    Generate a movie summary using the Hugging Face API.
+
+    Parameters:
+    - text (str): The input text for summary generation.
+    - max_tokens (int): The maximum number of tokens in the generated summary.
+
+    Returns:
+    - str: The generated movie summary.
+    """
     payload = {"inputs": text, "max_tokens": max_tokens}
     headers = {"Authorization": f"Bearer {huggingface_api_key}", "Content-Type": "application/json"}
     response = requests.post(huggingface_api_url, headers=headers, json=payload)
@@ -41,6 +62,12 @@ def generate_summary_using_api(text, max_tokens=5):
 
 @app.route(route="GetMovies")
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Azure Function for handling GET requests to retrieve movie information.
+
+    Returns:
+    - func.HttpResponse: The HTML response containing movie information.
+    """
     try:
         # Query Cosmos DB to get all movies
         query = 'SELECT * FROM c'
@@ -200,6 +227,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="GenerateSummary")
 def generate_summary_handler(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Azure Function for handling GET requests to generate movie summaries.
+
+    Parameters:
+    - req (func.HttpRequest): The HTTP request object.
+
+    Returns:
+    - func.HttpResponse: The generated movie summary.
+    """
     try:
         title = req.params.get('title')
         if not title:

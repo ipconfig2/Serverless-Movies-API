@@ -23,6 +23,22 @@ container = database.get_container_client(container_id)
 # Hugging Face API URL
 huggingface_api_url = "https://api-inference.huggingface.co/models/google/gemma-7b"
 
+def get_movie_details(title):
+    query = f'SELECT * FROM c WHERE c.title = "{title}"'
+    items = container.query_items(query, enable_cross_partition_query=True)
+    return next(iter(items), None)
+
+def generate_summary_using_api(text, max_tokens=5):
+    payload = {"inputs": text, "max_tokens": max_tokens}
+    headers = {"Authorization": f"Bearer {huggingface_api_key}", "Content-Type": "application/json"}
+    response = requests.post(huggingface_api_url, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        return f"Error generating summary. Hugging Face API response: {response.status_code}"
+
+    generated_summary = response.json()[0].get("generated_text", "Summary not available")
+    return generated_summary
+
 @app.route(route="GetMovies")
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -110,9 +126,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     <img src='{item['coverUrl']}' alt='{item['title']} Cover'>
                     <div class='details'>
                         <strong>Title:</strong> {item['title']}<br>
-                        <strong>Place:</strong> {item['place']}<br>
-                        <strong>Release Year:</strong> {item['releaseYear']}<br>
-                        <strong>Genre:</strong> {item['genre']}<br>
+                        <strong>Place:</strong> {item.get('place', 'N/A')}<br>
+                        <strong>Release Year:</strong> {item.get('releaseYear', 'N/A')}<br>
+                        <strong>Genre:</strong> {item.get('genre', 'N/A')}<br>
                         <button class='summary-button' onclick="generateSummary('{item['title']}')">Generate Summary</button>
                         <div class='summary' id='summary-{item['title'].replace(' ', '-')}'> </div>
                     </div>
@@ -123,7 +139,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 </ul>
                 <script>
                     function generateSummary(title) {
-                        const summaryElement = document.getElementById('summary-' + title.replace(' ', '-'));
+                        const summaryElement = document.getElementById('summary-' + title.replace(/ /g, '-'));
                         summaryElement.innerHTML = 'Generating summary...';
 
                         fetch('/api/GenerateSummary?title=' + encodeURIComponent(title))
@@ -159,30 +175,15 @@ def generate_summary_handler(req: func.HttpRequest) -> func.HttpResponse:
         if not title:
             return func.HttpResponse("Title parameter missing", status_code=400)
 
-        # Query Cosmos DB to get movie details
-        query = f'SELECT * FROM c WHERE c.title = "{title}"'
-        items = container.query_items(query, enable_cross_partition_query=True)
-        movie = next(iter(items), None)
+        # Get movie details
+        movie = get_movie_details(title)
 
         if not movie:
             return func.HttpResponse("Movie not found", status_code=404)
 
-        # Use the Hugging Face API to generate a summary
-        payload = {
-            "inputs": f"Summary of the movie '{title}': {movie['title']} is a {movie['genre']} movie released in {movie['releaseYear']}."
-        }
-
-        headers = {
-            "Authorization": f"Bearer {huggingface_api_key}",
-            "Content-Type": "application/json"
-        }
-
-        response = requests.post(huggingface_api_url, headers=headers, json=payload)
-
-        if response.status_code != 200:
-            return func.HttpResponse(f"Error generating summary. Hugging Face API response: {response.status_code}", status_code=500)
-
-        generated_summary = response.json()[0].get("generated_text", "Summary not available")
+        # Generate summary using the Hugging Face API with max_tokens set to 5
+        summary_text = f"Summary of the movie '{title}': {movie.get('title', 'N/A')} is a {movie.get('genre', 'N/A')} movie released in {movie.get('releaseYear', 'N/A')}."
+        generated_summary = generate_summary_using_api(summary_text, max_tokens=5)
 
         return func.HttpResponse(
             body=generated_summary,

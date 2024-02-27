@@ -2,6 +2,8 @@
 
 Movie Ranker is a web application that provides information about movies stored in Azure Cosmos DB. Users can explore the list of movies, view details, and generate summaries for each movie using Hugging Face API.
 
+![movie ranker](https://github.com/ipconfig2/Serverless-Movies-API/assets/78152356/58e51ab3-5194-451a-948e-0b16000ad6dd)
+
 ## Features
 
 - **Movie Listing:** Display a list of movies with essential details.
@@ -59,7 +61,3 @@ Feel free to contribute to the project by opening issues or submitting pull requ
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-**Note:** Replace placeholders like `[...]` with actual details relevant to your project.
